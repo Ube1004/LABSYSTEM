@@ -4,7 +4,6 @@ import logging
 from qrscanner import qrscan
 from datetime import datetime
 from flask import session
-import winsound
 import base64
 import os
 from datetime import datetime
