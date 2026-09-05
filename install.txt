@@ -25,3 +25,5 @@ Ctrl + Shift + P
 
 sudo apt update
 sudo apt install -y libgl1
+
+python -m venv venv
