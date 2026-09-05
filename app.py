@@ -1,4 +1,4 @@
-from flask import Flask, jsonify , render_template , redirect, request, url_for 
+from flask import Flask, jsonify, render_template, redirect, request, url_for
 import sqlite3
 import logging
 from qrscanner import qrscan
@@ -6,22 +6,27 @@ from datetime import datetime
 from flask import session
 import base64
 import os
-from datetime import datetime
 from werkzeug.security import generate_password_hash
-
-##is_superAdmin = session.get('role') == 'superAdmin'
-
-
-
+from pathlib import Path
 
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-#RENDERING PAGES
+
+# ============================================================
+# DATABASE PATH
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = BASE_DIR / "sql.db"
+
+
+# ============================================================
+# RENDERING PAGES
+# ============================================================
 
 @app.route('/login', methods=['POST'])
-
 def login():
 
     data = request.get_json()
@@ -29,17 +34,15 @@ def login():
     username = data.get('username')
     password = str(data.get('password'))
 
-    conn = sqlite3.connect('sql.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
     cur = conn.cursor()
 
     cur.execute("""
-
         SELECT * FROM Users
         WHERE Name = ?
         AND Password = ?
-
     """, (username, password))
 
     user = cur.fetchone()
@@ -48,64 +51,70 @@ def login():
 
     if user:
 
-        #SAVE SESSION
+        # SAVE SESSION
         session['username'] = user['Name']
-
         session['role'] = user['Status']
-        session['userId'] = user['userId']
+        session['userId'] = user['UserID']
 
         return jsonify({
             "success": True,
             "username": user['Name'],
             "role": user['Status'],
-            "userId": user['UserId']
+            "userId": user['UserID']
         })
 
     return jsonify({
         "success": False
     })
-    ##s
+
+
 @app.route('/gotologin')
 def gotologin():
     return render_template('login.html')
 
+
 @app.route('/borrow')
 def borrow():
-    
-    conn = sqlite3.connect("sql.db")
+
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
     cursor = conn.cursor()
+
     cursor.execute("""
-    SELECT Type, COUNT(*) AS Quantity
-    FROM items
-    GROUP BY Type
-""")
+        SELECT Type, COUNT(*) AS Quantity
+        FROM Items
+        GROUP BY Type
+    """)
 
     items = cursor.fetchall()
 
-    conn.close() 
-    
-    return render_template('borrow.html', items = items )
+    conn.close()
+
+    return render_template('borrow.html', items=items)
+
 
 @app.route('/')
 def home():
     return render_template('login.html')
 
 
-
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
+
 
 @app.route('/documentation')
 def documentation():
     return render_template('documentation.html')
 
+
 @app.route('/analytics')
 def analytics():
-    conn = sqlite3.connect('sql.db')
+
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     cur = conn.cursor()
 
     cur.execute("""
@@ -119,57 +128,66 @@ def analytics():
         GROUP BY Borrower.SchoolID
         ORDER BY TotalBorrowed DESC
         LIMIT 10
-        """)
+    """)
+
     top_borrowers = cur.fetchall()
-    
+
     cur.execute("""
-                    SELECT
-                        Items.Type,
-                        COUNT(Log.ItemID) AS BorrowCount
+        SELECT
+            Items.Type,
+            COUNT(Log.ItemID) AS BorrowCount
+        FROM Log
+        JOIN Items
+            ON Log.ItemID = Items.ItemID
+        GROUP BY Items.Type
+        ORDER BY BorrowCount DESC
+        LIMIT 10
+    """)
 
-                    FROM Log
-
-                    JOIN Items
-                        ON Log.ItemID = Items.ItemID
-
-                    GROUP BY Items.Type
-
-                    ORDER BY BorrowCount DESC
-
-                    LIMIT 10
-                        """)
     top_items = cur.fetchall()
 
-                
+    conn.close()
 
-    return render_template("analytics.html", top_borrowers = top_borrowers, top_items = top_items)
+    return render_template(
+        "analytics.html",
+        top_borrowers=top_borrowers,
+        top_items=top_items
+    )
 
 
 @app.route('/broken')
 def broken():
     return render_template('broken.html')
 
-##END OF RENDERING PAGES
 
-
+# ============================================================
+# ITEMS
+# ============================================================
 
 @app.route('/brokenitems')
 def getbroken():
-    conn = sqlite3.connect('sql.db')
+
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT * FROM items
-        WHERE status = 'BROKEN'
+        SELECT * FROM Items
+        WHERE Status = 'BROKEN'
     """)
 
     rows = cursor.fetchall()
+
+    conn.close()
+
     data = []
+
     for row in rows:
 
         remarks = row[5]
-        if row[5] == None:
+
+        if remarks is None:
             remarks = ""
 
         data.append({
@@ -186,22 +204,27 @@ def getbroken():
 
 @app.route('/returningItem')
 def get_nearest_expiry():
-    conn = sqlite3.connect('sql.db')
+
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     cursor = conn.cursor()
 
     today = datetime.now().date()
 
     cursor.execute("""
-        SELECT * FROM items
+        SELECT * FROM Items
         WHERE expiry_date >= ?
         ORDER BY expiry_date ASC
         LIMIT 1
     """, (today,))
 
     item = cursor.fetchone()
+
     conn.close()
+
     return item
+
 
 @app.route('/test')
 def test():
@@ -229,19 +252,26 @@ def test():
         ]
     })
 
+
 @app.route('/items')
 def get_items():
-    db_conn = sqlite3.connect('sql.db')
+
+    db_conn = sqlite3.connect(DB_PATH)
     cursor = db_conn.cursor()
+
     cursor.execute("SELECT * FROM Items")
+
     rows = cursor.fetchall()
+
     db_conn.close()
+
     data = []
 
     for row in rows:
 
         remarks = row[5]
-        if row[5] == None:
+
+        if remarks is None:
             remarks = ""
 
         data.append({
@@ -254,47 +284,76 @@ def get_items():
         })
 
     return jsonify(data)
-    
+
+
 @app.route('/count')
 def count():
-    db_conn = sqlite3.connect('sql.db')
+
+    db_conn = sqlite3.connect(DB_PATH)
+
     type_ = ""
+
     cursor = db_conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM Items WHERE Type = ?", (type_))
+
+    cursor.execute(
+        "SELECT COUNT(*) FROM Items WHERE Type = ?",
+        (type_,)
+    )
+
     count = cursor.fetchone()[0] + 1
 
-#SCAN
+    db_conn.close()
+
+    return jsonify({
+        "count": count
+    })
+
+
+# ============================================================
+# QR SCAN
+# ============================================================
+
 @app.route('/qrscan')
 def qr_scan():
-    
+
     codes = qrscan()
 
     if not codes:
         return jsonify([])
-    
+
     placeholder = ','.join('?' * len(codes))
-    db_conn = sqlite3.connect('sql.db')
+
+    db_conn = sqlite3.connect(DB_PATH)
     cursor = db_conn.cursor()
-    cursor.execute(f"SELECT * FROM Items WHERE Code IN ({placeholder})", codes)
+
+    cursor.execute(
+        f"SELECT * FROM Items WHERE Code IN ({placeholder})",
+        codes
+    )
+
     rows = cursor.fetchall()
+
     db_conn.close()
+
     data = []
     found_codes = []
+
     for row in rows:
+
         data.append({
             "ItemID": row[0],
             "Code": row[1],
             "Category": row[2],
             "Type": row[3],
-            "Status": row[4]       
+            "Status": row[4]
         })
+
         found_codes.append(row[1])
-    #Log    
-    #logging.basicConfig(filename='log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    #for item in data:
-    #    logging.info("scanned items: %s", item)
-        
-    missing = [code for code in codes if code not in found_codes]
+
+    missing = [
+        code for code in codes
+        if code not in found_codes
+    ]
 
     return jsonify({
         "items": data,
@@ -302,7 +361,11 @@ def qr_scan():
     })
 
 
-@app.route('/confirmborrow', methods=['POST']) 
+# ============================================================
+# BORROWING
+# ============================================================
+
+@app.route('/confirmborrow', methods=['POST'])
 def confirm_borrow():
 
     data = request.get_json()
@@ -315,29 +378,36 @@ def confirm_borrow():
     dateB = data.get('dateB')
     dateR = data.get('dateR')
     items = data.get('items')
-    approvedBy = data.get ('approvedBy')
+    approvedBy = data.get('approvedBy')
 
-    db_conn = sqlite3.connect('sql.db')
+    db_conn = sqlite3.connect(DB_PATH)
     cursor = db_conn.cursor()
 
     cursor.execute("""
-    SELECT * FROM Borrower
-    WHERE SchoolID = ?
+        SELECT * FROM Borrower
+        WHERE SchoolID = ?
     """, (studentid,))
+
     existing = cursor.fetchone()
-        
+
     if not existing:
-    # insert borrower
+
         cursor.execute("""
             INSERT INTO Borrower
             (schoolID, BorrowerName, Email, Department, Contact)
             VALUES (?, ?, ?, ?, ?)
-        """, (studentid, name, email, institute, contact))
+        """, (
+            studentid,
+            name,
+            email,
+            institute,
+            contact
+        ))
 
-    #loop items
+    # LOOP THROUGH ITEMS
     for item in items:
 
-        #insert log
+        # INSERT LOG
         cursor.execute("""
             INSERT INTO Log
             (SchoolID, ItemID, DateBorrowed, ExpectedReturnDate, ApprovedBy)
@@ -350,7 +420,7 @@ def confirm_borrow():
             approvedBy
         ))
 
-        #UPDATE ITEM STATUS
+        # UPDATE ITEM STATUS
         cursor.execute("""
             UPDATE Items
             SET Status = ?
@@ -369,46 +439,56 @@ def confirm_borrow():
     })
 
 
+# ============================================================
+# RETURNING
+# ============================================================
+
 @app.route('/returning')
 def returning():
-    
+
     is_superAdmin = session.get('role') == 'superAdmin'
-    conn = sqlite3.connect('sql.db')
+
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     cur = conn.cursor()
 
     query = """
-    SELECT 
-        Borrower.SchoolID,
-        Borrower.BorrowerName,
-        Borrower.Email,
-        Borrower.Contact,
-        Borrower.Department,
-        Log.DateBorrowed,
-        Log.ExpectedReturnDate,
-        Log.DateReturned,
-        Log.ApprovedBy,
-        Items.Code,
-        Items.Category,
-        Items.Type,
-        Items.Status
-    FROM Log
-    INNER JOIN Borrower 
-        ON Log.SchoolID = Borrower.SchoolID
-    INNER JOIN Items 
-        ON Log.ItemID = Items.ItemID
+        SELECT
+            Borrower.SchoolID,
+            Borrower.BorrowerName,
+            Borrower.Email,
+            Borrower.Contact,
+            Borrower.Department,
+            Log.DateBorrowed,
+            Log.ExpectedReturnDate,
+            Log.DateReturned,
+            Log.ApprovedBy,
+            Items.Code,
+            Items.Category,
+            Items.Type,
+            Items.Status
+        FROM Log
+        INNER JOIN Borrower
+            ON Log.SchoolID = Borrower.SchoolID
+        INNER JOIN Items
+            ON Log.ItemID = Items.ItemID
     """
 
     cur.execute(query)
+
     rows = cur.fetchall()
+
     conn.close()
-    
+
     grouped = {}
 
     for row in rows:
+
         sid = row["SchoolID"]
 
         if sid not in grouped:
+
             grouped[sid] = {
                 "SchoolID": sid,
                 "BorrowerName": row["BorrowerName"],
@@ -423,17 +503,18 @@ def returning():
             }
 
         grouped[sid]["Items"].append(
-            f"{row['Type']}"
+            row["Type"]
         )
-            
 
-    return render_template("returning.html", data=list(grouped.values()), is_superAdmin = is_superAdmin)
+    return render_template(
+        "returning.html",
+        data=list(grouped.values()),
+        is_superAdmin=is_superAdmin
+    )
 
 
 @app.route('/confirmreturn')
 def confirm_return():
-
-    from qrscanner import qrscan
 
     qrcodes = qrscan()
 
@@ -444,26 +525,27 @@ def confirm_return():
 
     placeholder = ','.join('?' * len(qrcodes))
 
-    conn = sqlite3.connect('sql.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+
     cur = conn.cursor()
 
     query = f"""
-    SELECT
-        Items.ItemID,
-        Items.Code,
-        Items.Type,
-        Borrower.BorrowerName
-    FROM Log
+        SELECT
+            Items.ItemID,
+            Items.Code,
+            Items.Type,
+            Borrower.BorrowerName
+        FROM Log
 
-    INNER JOIN Items
-        ON Log.ItemID = Items.ItemID
+        INNER JOIN Items
+            ON Log.ItemID = Items.ItemID
 
-    INNER JOIN Borrower
-        ON Log.SchoolID = Borrower.SchoolID
+        INNER JOIN Borrower
+            ON Log.SchoolID = Borrower.SchoolID
 
-    WHERE Items.Code IN ({placeholder})
-    AND Log.DateReturned IS NULL
+        WHERE Items.Code IN ({placeholder})
+        AND Log.DateReturned IS NULL
     """
 
     cur.execute(query, qrcodes)
@@ -477,12 +559,10 @@ def confirm_return():
     for row in rows:
 
         data.append({
-
             "ItemID": row["ItemID"],
             "Code": row["Code"],
             "Type": row["Type"],
             "BorrowerName": row["BorrowerName"]
-
         })
 
     return jsonify({
@@ -497,12 +577,12 @@ def update_return():
 
     items = data.get('items')
 
-    conn = sqlite3.connect('sql.db')
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     for item in items:
 
-        #update item status
+        # UPDATE ITEM STATUS
         cur.execute("""
             UPDATE Items
             SET Status = ?
@@ -512,7 +592,7 @@ def update_return():
             item['ItemID']
         ))
 
-        #update log return date
+        # UPDATE LOG RETURN DATE
         cur.execute("""
             UPDATE Log
             SET DateReturned = DATE('now')
@@ -527,8 +607,9 @@ def update_return():
 
     return jsonify({
         "success": True,
-        "message": "Items returned successfully "
+        "message": "Items returned successfully"
     })
+
 
 @app.route('/manualReturn', methods=['POST'])
 def manualReturn():
@@ -538,10 +619,10 @@ def manualReturn():
     school_id = data['studentId']
     code = data['code']
 
-    conn = sqlite3.connect('sql.db')
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # Find item using code
+    # FIND ITEM USING CODE
     cur.execute("""
         SELECT ItemID
         FROM Items
@@ -551,40 +632,50 @@ def manualReturn():
     item = cur.fetchone()
 
     if not item:
+
         conn.close()
+
         return jsonify({
             "message": "Item code not found."
         })
 
     item_id = item[0]
 
-    # Check active borrow record
+    # CHECK ACTIVE BORROW RECORD
     cur.execute("""
         SELECT LogID
         FROM Log
         WHERE SchoolID = ?
         AND ItemID = ?
         AND (DateReturned IS NULL OR DateReturned = '')
-    """, (school_id, item_id))
+    """, (
+        school_id,
+        item_id
+    ))
 
     log = cur.fetchone()
 
     if not log:
+
         conn.close()
+
         return jsonify({
             "message": "No active borrowing record found."
         })
 
     today = datetime.now().strftime("%d/%m/%Y")
 
-    # Update log
+    # UPDATE LOG
     cur.execute("""
         UPDATE Log
         SET DateReturned = ?
         WHERE LogID = ?
-    """, (today, log[0]))
+    """, (
+        today,
+        log[0]
+    ))
 
-    # Update item status
+    # UPDATE ITEM STATUS
     cur.execute("""
         UPDATE Items
         SET Status = 'Available'
@@ -592,10 +683,11 @@ def manualReturn():
     """, (item_id,))
 
     cur.execute("""
-    SELECT Type
-    FROM Items
-    WHERE ItemID = ?
+        SELECT Type
+        FROM Items
+        WHERE ItemID = ?
     """, (item_id,))
+
     item_name = cur.fetchone()[0]
 
     conn.commit()
@@ -607,15 +699,18 @@ def manualReturn():
     })
 
 
+# ============================================================
+# PHOTOS
+# ============================================================
+
 @app.route("/savephotos", methods=["POST"])
 def savephotos():
 
     data = request.get_json()
 
-    
     images = data["images"]
 
-    folder = "static/photos/borrow"
+    folder = BASE_DIR / "static" / "photos" / "borrow"
 
     os.makedirs(folder, exist_ok=True)
 
@@ -625,49 +720,88 @@ def savephotos():
 
         image_bytes = base64.b64decode(image)
 
-        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i+1}.jpg"
+        filename = (
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            f"_{i+1}.jpg"
+        )
 
-        with open(os.path.join(folder, filename), "wb") as f:
+        with open(folder / filename, "wb") as f:
             f.write(image_bytes)
 
     return jsonify({
-        "message":"Photos saved successfully!"
+        "message": "Photos saved successfully!"
     })
-    
-    
+
+
+# ============================================================
+# USER MANAGEMENT
+# ============================================================
+
 @app.route("/createUser", methods=["POST"])
 def createUser():
+
     data = request.get_json()
+
     name = data.get("name")
     password = data.get("password")
 
     if not name or not password:
-        return jsonify({"success": False, "message": "Please fill in all fields."})
 
-    conn = sqlite3.connect('sql.db')
+        return jsonify({
+            "success": False,
+            "message": "Please fill in all fields."
+        })
+
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     try:
+
         cur.execute("""
             INSERT INTO Users (Name, Password, Status)
             VALUES (?, ?, ?)
-        """, (name, password, "Admin"))
-        conn.commit()
-        return jsonify({"success": True, "message": "User created successfully."})
-    except sqlite3.Error as e:
-        return jsonify({"success": False, "message": "Error creating user."})
-    finally:
-        conn.close()
+        """, (
+            name,
+            password,
+            "Admin"
+        ))
 
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "User created successfully."
+        })
+
+    except sqlite3.Error as e:
+
+        return jsonify({
+            "success": False,
+            "message": "Error creating user."
+        })
+
+    finally:
+
+        conn.close()
 
 
 @app.route("/get_student/<student_id>")
 def get_student(student_id):
-    conn = sqlite3.connect('sql.db')
+
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    approved_by = session.get('name')
+
     cur.execute(
-        "SELECT SchoolID, BorrowerName, Email, Department, Contact FROM Borrower WHERE SchoolID = ?",
+        """
+        SELECT
+            SchoolID,
+            BorrowerName,
+            Email,
+            Department,
+            Contact
+        FROM Borrower
+        WHERE SchoolID = ?
+        """,
         (student_id,)
     )
 
@@ -690,38 +824,53 @@ def get_student(student_id):
     return jsonify({
         "success": False
     })
-    
-    
-    
+
+
 @app.route("/manageAccount")
 def manageAccount():
-    conn = sqlite3.connect("sql.db")
+
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
-    cur.execute("SELECT UserID, Name, Status FROM Users")  # don't select password
+
+    cur.execute(
+        "SELECT UserID, Name, Status FROM Users"
+    )
+
     users = cur.fetchall()
+
     conn.close()
 
     return jsonify({
         "success": True,
         "users": [
-            {"UserID": u[0], "Name": u[1], "Status": u[2]} for u in users
+            {
+                "UserID": u[0],
+                "Name": u[1],
+                "Status": u[2]
+            }
+            for u in users
         ]
     })
 
 
 @app.route("/get_user/<int:userID>")
 def get_user(userID):
-    conn = sqlite3.connect("sql.db")
+
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+
     cur.execute("""
         SELECT UserID, Name, Status
         FROM Users
         WHERE UserID = ?
     """, (userID,))
+
     user = cur.fetchone()
+
     conn.close()
 
     if user:
+
         return jsonify({
             "success": True,
             "userID": user[0],
@@ -729,30 +878,64 @@ def get_user(userID):
             "status": user[2]
         })
 
-    return jsonify({"success": False})
+    return jsonify({
+        "success": False
+    })
 
 
 @app.route("/update_user/<int:userID>", methods=["POST"])
 def update_user(userID):
+
     data = request.get_json()
-    conn = sqlite3.connect("sql.db")
+
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     if data.get("password"):
-        # hash before storing in a real app, e.g. with werkzeug.security.generate_password_hash
+
         cur.execute(
-            "UPDATE Users SET Name = ?, Password = ?, Status = ? WHERE UserID = ?",
-            (data["name"], data["password"], data["status"], userID)
+            """
+            UPDATE Users
+            SET Name = ?, Password = ?, Status = ?
+            WHERE UserID = ?
+            """,
+            (
+                data["name"],
+                data["password"],
+                data["status"],
+                userID
+            )
         )
+
     else:
+
         cur.execute(
-            "UPDATE Users SET Name = ?, Status = ? WHERE UserID = ?",
-            (data["name"], data["status"], userID)
+            """
+            UPDATE Users
+            SET Name = ?, Status = ?
+            WHERE UserID = ?
+            """,
+            (
+                data["name"],
+                data["status"],
+                userID
+            )
         )
 
     conn.commit()
     conn.close()
-    return jsonify({"success": True})
-if __name__ == '__main__':
-    app.run(debug=True, use_reloader=False)
 
+    return jsonify({
+        "success": True
+    })
+
+
+# ============================================================
+# RUN APP
+# ============================================================
+
+if __name__ == '__main__':
+    app.run(
+        debug=True,
+        use_reloader=False
+    )
