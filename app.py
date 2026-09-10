@@ -101,7 +101,43 @@ def home():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT COUNT(*) AS Total
+    FROM Borrower
+""")
+    Borrowers = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS Borrowings
+        FROM Log
+        WHERE DateReturned is NULL
+    """)
+    Borrowing = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS Return
+        FROM Log
+        WHERE DateReturned IS NOT NULL
+    """)
+    Returned = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS Item
+        FROM Items
+    """)
+    Items = cursor.fetchone()
+
+
+    conn.close()
+    
+
+    return render_template('dashboard.html',Items=Items , Returned=Returned, Borrower=Borrowers, ss=88, Borrowing = Borrowing)
+
 
 
 @app.route('/documentation')
@@ -885,6 +921,7 @@ def get_user(userID):
 
 @app.route("/update_user/<int:userID>", methods=["POST"])
 def update_user(userID):
+    
 
     data = request.get_json()
 
