@@ -2,1062 +2,1476 @@
 <html>
 <head>
     <title>Borrowing</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+
 </head>
 
 <body>
 
 <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 
+
 <div class="container">
 
-    <!-- ================= SIDEBAR ================= -->
 
-    <div class="sidebar">
+<!-- ================= SIDEBAR ================= -->
 
-        <div class="logo-header">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo">
+<div class="sidebar">
 
-            <h2 class="title">
-                SCIENCE LABORATORY<br>
-                CITY COLLEGE OF ANGELES
-            </h2>
-        </div>
+    <div class="logo-header">
 
-        <button class="menu-btn" onclick="location.href='dashboard'">
-            📊 Dashboard
-        </button>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo">
 
-        <button class="menu-btn active">
-            📥 Borrowing
-        </button>
-
-        <button class="menu-btn" onclick="location.href='returning'">
-            🔄 Returning
-        </button>
-
-        <button class="menu-btn" onclick="location.href='broken'">
-            📋 List Items
-        </button>
-
-        <button class="menu-btn" onclick="location.href='analytics'">
-            📈 Data Analytics
-        </button>
-
-        <button class="menu-btn" onclick="location.href='documentation'">
-            📄 Documentation
-        </button>
-
-        <div class="user-box">
-            <p class="name">
-                {{ session['username'] }}
-            </p>
-
-            <small>
-                basilio@cca.edu.ph
-            </small>
-        </div>
-
-        <button class="logout-btn" onclick="logout()">
-            Logout
-        </button>
+        <h2 class="title">
+            SCIENCE LABORATORY IN<br>
+            CITY COLLEGE OF ANGELES
+        </h2>
 
     </div>
 
-    <!-- ================= MAIN CONTENT ================= -->
 
-    <div class="main">
+    <button class="menu-btn" onclick="location.href='dashboard'">
+        📊 Dashboard
+    </button>
 
-        <!-- ================= TOP BUTTONS ================= -->
 
-        <div class="top-bar">
+    <button class="menu-btn active">
+        📥 Borrowing
+    </button>
 
-            {% if session['role'] == 'superAdmin' %}
-                <button onclick="openForm('createAccount')">Create Account</button>
-                <button onclick="manageAccount()">Manage Account</button>
-            {% endif %}
 
-            <button class="qr-btn" onclick="openForm('checkID')">
-                <img
-                    src="{{ url_for('static', filename='images/icon.png') }}"
-                    class="qr-icon">
-                Borrow Form
-            </button>
+    <button class="menu-btn" onclick="location.href='returning'">
+        🔄 Returning
+    </button>
 
-            <button class="top-btn" onclick="openForm('reservationForm')">
-                📅 Reservation Form
-            </button>
 
-            <button class="top-btn" onclick="openForm('breakageForm')">
-                ❌ Breakage Form
-            </button>
+    <button class="menu-btn" onclick="location.href='broken'">
+        📋 List Items
+    </button>
 
-            <button class="top-btn" onclick="openForm('requisitionForm')">
-                📄 Requisition Slip
-            </button>
 
-        </div>
+    <button class="menu-btn" onclick="location.href='analytics'">
+        📈 Data Analytics
+    </button>
 
-        <!-- ================= EQUIPMENT SECTION ================= -->
 
-        <div class="equipment-grid">
+    <button class="menu-btn" onclick="location.href='documentation'">
+        📄 Documentation
+    </button>
 
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/stopwatch.png') }}"
-                     class="item-img">
 
-                <h3>
-                    Stopwatch
-                </h3>
 
-                <p>
-                    Available: {{ StopWatch }}
-                </p>
-            </div>
+    <div class="user-box">
 
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/testtube.png') }}"
-                     class="item-img">
+        <p class="name">
+            Ashley Basilio
+        </p>
 
-                <h3>
-                    Test Tube
-                </h3>
-
-                <p>
-                    Available: {{ TestTube }}
-                </p>
-            </div>
-
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/microscope.png') }}"
-                     class="item-img">
-
-                <h3>
-                    Microscope
-                </h3>
-
-                <p>
-                    Available: {{ Microscope }}
-                </p>
-            </div>
-
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/syringe.png') }}"
-                     class="item-img">
-
-                <h3>
-                    Syringe
-                </h3>
-
-                <p>
-                    Available: {{ Syringe }}
-                </p>
-            </div>
-
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/thermometer.png') }}"
-                     class="item-img">
-
-                <h3>
-                    Thermometer
-                </h3>
-
-                <p>
-                    Available: {{ Thermometer }}
-                </p>
-            </div>
-
-            <div class="card">
-                <img src="{{ url_for('static', filename='images/magnifying.png') }}"
-                     class="item-img">
-
-                <h3>
-                    Magnifying Glass
-                </h3>
-
-                <p>
-                    Available: 6
-                </p>
-            </div>
-<!--Quantity-->
-        {% for item in items %}
-            <p>{{ item["Type"] }} — Quantity: {{ item["Quantity"] }}</p>
-        {% endfor %}
-
-        <!--check id-->
-        <div id="checkID" class="modal">
-
-            <div class="modal-content large-form">
-
-                <span class="close" onclick="closeForm('checkID')">
-                    &times;
-                </span>
-
-                <div class="form-header">
-
-                    <h2>
-                        CITY COLLEGE OF ANGELES
-                    </h2>
-
-                    <h2>
-                        Angeles City
-                    </h2>
-
-                    <h3>
-                        SCIENCE LABORATORY
-                    </h3>
-
-                    <h4>
-                        BORROWER'S FORM
-                    </h4>
-
-                </div>
-
-                <div class="col">
-                    <label>
-                        Student ID:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="studentID"
-                        name="studentID">
-                </div>
-               
-                </div>
-
-                    <button
-                        class="confirm-btn"
-                        onclick="checkID()"
-                        id="checkIDbtn"
-                        style="display:block;">
-                        Next
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
+        <small>
+            basilio@cca.edu.ph
+        </small>
 
     </div>
 
 
 
-        <!-- ================= BORROW FORM MODAL ================= -->
-
-        <div id="borrowForm" class="modal">
-
-            <div class="modal-content large-form">
-
-                <span class="close" onclick="closeForm('borrowForm')">
-                    &times;
-                </span>
-
-                <div class="form-header">
-
-                    <h2>
-                        CITY COLLEGE OF ANGELES
-                    </h2>
-
-                    <h2>
-                        Angeles City
-                    </h2>
-
-                    <h3>
-                        SCIENCE LABORATORY
-                    </h3>
-
-                    <h4>
-                        BORROWER'S FORM
-                    </h4>
-
-                </div>
-
-                <div class="col">
-                    <label>
-                        Name:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="Name"
-                        name="Name">
-                </div>
-
-                <div class="col">
-                    <label>
-                        Email:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="Email"
-                        name="Email">
-                </div>
-
-                <div class="row">
-
-                    <div class="col">
-                        <label>
-                            Student ID:
-                        </label>
-
-                        <input
-                            type="text"
-                            id="StudentID"
-                            name="StudentID">
-                    </div>
+    <button class="logout-btn" onclick="logout()">
+        Logout
+    </button>
 
-                    <div class="col">
-                        <label>
-                            Institute:
-                        </label>
-
-                        <input
-                            type="text"
-                            id="Institute"
-                            name="Institute">
-                    </div>
 
-                    <div class="col">
-                        <label>
-                            Contact No.
-                        </label>
+</div>
 
-                        <input
-                            type="text"
-                            id="Contact"
-                            name="Contact">
-                    </div>
 
-                </div>
 
-                <div class="row">
+<!-- ================= MAIN CONTENT ================= -->
 
-                    <div class="col">
-                        <label>
-                            Date Borrowed:
-                        </label>
+<div class="main">
 
-                        <input
-                            type="date"
-                            id="dateBorrowed">
-                    </div>
 
-                    <div class="col">
-                        <label>
-                            Date of Return:
-                        </label>
+<!-- ================= TOP BUTTONS ================= -->
 
-                        <input
-                            type="date"
-                            id="dateReturn">
-                    </div>
 
-                </div>
+<div class="top-bar">
 
-                <div class="col">
-                    <label>
-                        Approved by:
-                    </label>
 
-                    <input
-                        type="text"
-                        id="approvedBy"
-                       >
-                </div>
+    <button class="qr-btn" onclick="openForm('borrowForm')">
 
-                <div class="col">
-                    <label>
-                        Item Borrowing:
-                    </label>
+        <img 
+        src="{{ url_for('static', filename='images/icon.png') }}"
+        class="qr-icon">
 
-                    <div class="item-box" id="itemBox">
-                        <!-- scanned items will appear here -->
-                    </div>
-                </div>
+        Borrow Form
 
-                <div class="button-group">
+    </button>
 
-                    <button
-                        class="scan-btn"
-                        onclick="qrscanform()">
-                        Scan Items
-                    </button>
 
-                    <button
-                        class="confirm-btn"
-                        onclick="confirmborrow(borrowData)"
-                        id="confirmBtn"
-                        style="display:none;">
-                        Confirm Borrow
-                    </button>
 
-                </div>
+    <button class="top-btn" onclick="openForm('reservationForm')">
 
-            </div>
+        📅 Reservation Form
 
-        </div>
+    </button>
 
-        <!-- ================= QR SCANNER MODAL ================= -->
 
-        <div id="qrModal" class="qr-modal">
 
-            <div class="qr-content">
+    <button class="top-btn" onclick="openForm('breakageForm')">
 
-                <span
-                    class="close-btn"
-                    onclick="closeScanner()">
-                    &times;
-                </span>
+        ❌ Breakage Form
 
-                <h3>
-                    Scan QR Code
-                </h3>
+    </button>
 
-                <div id="reader">
-                </div>
 
-            </div>
 
-        </div>
+    <button class="top-btn" onclick="openForm('requisitionForm')">
 
-        <!-- ================= NOTICE POPUP ================= -->
+        📄 Requisition Slip
 
-        <div popover id="mydiv">
+    </button>
 
-            <h2>
-                Notice!
-            </h2>
 
-            <hr>
+</div>
 
-            <p>
-                Please Insert Informations First.
-            </p>
 
-            <button
-                popovertarget="mydiv"
-                popovertargetaction="hide">
-                Close
-            </button>
 
-        </div>
 
-        <!-- ================= RESERVATION FORM ================= -->
+<!-- ================= LABORATORY INVENTORY ================= -->
 
-        <div id="reservationForm" class="modal">
+<div class="inventory-container">
 
-            <div class="modal-content form-container">
+    <div class="inventory-header">
+        <h2>Laboratory Inventory</h2>
+        <p>
+            View and search available laboratory equipment, chemicals,
+            supplies, and other laboratory resources.
+        </p>
+    </div>
 
-                <span class="close" onclick="closeForm('reservationForm')">
-                    &times;
-                </span>
+    <!-- SEARCH BAR -->
+    <div class="inventory-search-container">
+        <i class="fas fa-search"></i>
 
-                <h2 style="text-align:center;">
-                    CITY COLLEGE OF ANGELES
-                </h2>
+        <input
+            type="text"
+            id="inventorySearch"
+            placeholder="Search for an item..."
+            oninput="searchInventory()"
+        >
+    </div>
 
-                <h2 style="text-align:center;">
-                    Angeles City
-                </h2>
+    <!-- SEARCH RESULT -->
+    <p class="search-result" id="searchResult">
+        Showing all laboratory inventory items.
+    </p>
 
-                <h3 style="text-align:center;">
-                    Reservation Form for Science Laboratory
-                </h3>
 
-                <form>
+    <!-- ================= NON-TOXIC / LOW-HAZARD CHEMICALS ================= -->
 
-                    <div class="row">
-                        <label>
-                            Nature of Activity:
-                        </label>
+<div class="inventory-category category-nontoxic">
 
-                        <input type="text">
+    <div class="category-header">
+        <h3>🟢 Non-Toxic / Low-Hazard Chemicals</h3>
 
-                        <label>
-                            Date Filed:
-                        </label>
+        <span class="category-count">
+            <span class="category-visible-count">4</span> items
+        </span>
+    </div>
 
-                        <input type="date">
-                    </div>
+    <div class="inventory-table-wrapper">
 
-                    <div class="row">
-                        <label>
-                            Objective:
-                        </label>
+        <table class="inventory-table">
 
-                        <input type="text" style="width:100%;">
-                    </div>
-
-                    <table border="1" width="100%" cellspacing="0" cellpadding="5">
-
-                        <thead>
-                            <tr>
-                                <th>
-                                    Date of Activity
-                                </th>
-
-                                <th>
-                                    Time
-                                </th>
-
-                                <th>
-                                    Yr. & Section
-                                </th>
-
-                                <th>
-                                    Number of Students
-                                </th>
-
-                                <th>
-                                    Materials/Equipment Needed
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <tr>
-                                <td><input type="date"></td>
-                                <td><input type="time"></td>
-                                <td><input type="text"></td>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                            <tr>
-                                <td><input type="date"></td>
-                                <td><input type="time"></td>
-                                <td><input type="text"></td>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                            <tr>
-                                <td><input type="date"></td>
-                                <td><input type="time"></td>
-                                <td><input type="text"></td>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                        </tbody>
-
-                    </table>
-
-                    <div class="row">
-                        <label>
-                            Teacher in Charge:
-                        </label>
-
-                        <input type="text">
-                    </div>
-
-                    <div class="row">
-                        <label>
-                            Approved by:
-                        </label>
-
-                        <input type="text">
-                    </div>
-
-                    <button type="submit">
-                        Submit Reservation
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-        <!-- ================= BREAKAGE FORM ================= -->
-
-        <div id="breakageForm" class="modal">
-
-            <div class="modal-content large-form">
-
-                <span class="close" onclick="closeForm('breakageForm')">
-                    &times;
-                </span>
-
-                <div class="form-header">
-
-                    <h2>
-                        CITY COLLEGE OF ANGELES
-                    </h2>
-
-                    <h2>
-                        Institute of Education, Arts and Sciences
-                    </h2>
-
-                    <h3>
-                        SCIENCE LABORATORY
-                    </h3>
-
-                    <h4>
-                        BREAKAGE REPORT
-                    </h4>
-
-                </div>
-
-                <form>
-
-                    <div class="row">
-
-                        <div class="col">
-
-                            <label>
-                                Subject:
-                            </label>
-
-                            <input type="text">
-
-                            <label>
-                                Group No:
-                            </label>
-
-                            <input type="text">
-
-                            <label>
-                                Schedule:
-                            </label>
-
-                            <input type="text">
-
-                        </div>
-
-                        <div class="col">
-
-                            <label>
-                                Instructor's Name & Signature:
-                            </label>
-
-                            <input type="text">
-
-                            <label>
-                                Course & Section:
-                            </label>
-
-                            <input type="text">
-
-                            <label>
-                                Date:
-                            </label>
-
-                            <input type="date">
-
-                        </div>
-
-                    </div>
-
-                    <h4>
-                        Group Members and Students Number:
-                    </h4>
-
-                    <div class="members">
-
-                        <input type="text" placeholder="1.">
-                        <input type="text" placeholder="2.">
-                        <input type="text" placeholder="3.">
-                        <input type="text" placeholder="4.">
-                        <input type="text" placeholder="5.">
-                        <input type="text" placeholder="6.">
-                        <input type="text" placeholder="7.">
-                        <input type="text" placeholder="8.">
-                        <input type="text" placeholder="9.">
-                        <input type="text" placeholder="10.">
-
-                    </div>
-
-                    <table class="breakage-table">
-
-                        <tr>
-                            <th>
-                                Quantity
-                            </th>
-
-                            <th>
-                                Item Description
-                            </th>
-
-                            <th>
-                                Remarks
-                            </th>
-
-                            <th>
-                                Unit Cost
-                            </th>
-
-                            <th>
-                                Total Amount
-                            </th>
-                        </tr>
-
-                        <tr>
-                            <td><input type="number"></td>
-                            <td><input type="text"></td>
-                            <td><input type="text"></td>
-                            <td><input type="number"></td>
-                            <td><input type="number"></td>
-                        </tr>
-
-                        <tr>
-                            <td><input type="number"></td>
-                            <td><input type="text"></td>
-                            <td><input type="text"></td>
-                            <td><input type="number"></td>
-                            <td><input type="number"></td>
-                        </tr>
-
-                        <tr>
-                            <td><input type="number"></td>
-                            <td><input type="text"></td>
-                            <td><input type="text"></td>
-                            <td><input type="number"></td>
-                            <td><input type="number"></td>
-                        </tr>
-
-                    </table>
-
-                    <div class="signatures">
-
-                        <div>
-                            <p>
-                                Prepared by:
-                            </p>
-
-                            <input type="text">
-
-                            <small>
-                                Laboratory Custodian
-                            </small>
-                        </div>
-
-                        <div>
-                            <p>
-                                Signature of Group Leader:
-                            </p>
-
-                            <input type="text">
-                        </div>
-
-                    </div>
-
-                    <button type="submit">
-                        Submit Report
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-        <!-- REQUISITION FORM -->
-
-        <div id="requisitionForm" class="modal">
-
-            <div class="modal-content form-container">
-
-                <span class="close" onclick="closeForm('requisitionForm')">
-                    &times;
-                </span>
-
-                <!-- Header -->
-
-                <h2 style="text-align:center;">
-                    CITY COLLEGE OF ANGELES
-                </h2>
-
-                <h3 style="text-align:center;">
-                    TOTALIS HUMANAE
-                </h3>
-
-                <p style="text-align:center;">
-                    <strong>INSTITUTE OF EDUCATION, ARTS AND SCIENCES</strong><br>
-                    SCIENCE LABORATORY<br>
-                    <strong>REQUISITION SLIP</strong>
-                </p>
-
-                <form>
-
-                    <!-- Top Info -->
-
-                    <div class="row">
-                        <label>
-                            Course/Section:
-                        </label>
-
-                        <input type="text">
-
-                        <label>
-                            Experiment No.:
-                        </label>
-
-                        <input type="text">
-                    </div>
-
-                    <div class="row">
-                        <label>
-                            Group No.:
-                        </label>
-
-                        <input type="text">
-
-                        <label>
-                            Title:
-                        </label>
-
-                        <input type="text">
-                    </div>
-
-                    <div class="row">
-                        <label>
-                            Group Leader & Student No.:
-                        </label>
-
-                        <input type="text">
-
-                        <label>
-                            Date Borrowed:
-                        </label>
-
-                        <input type="date">
-                    </div>
-
-                    <!-- Members -->
-
-                    <div class="row">
-                        <label>
-                            Member Name & Student No.:
-                        </label>
-                    </div>
-
-                    <div class="members">
-                        <input type="text" placeholder="1.">
-                        <input type="text" placeholder="2.">
-                        <input type="text" placeholder="3.">
-                        <input type="text" placeholder="4.">
-                        <input type="text" placeholder="5.">
-                        <input type="text" placeholder="6.">
-                    </div>
-
-                    <!-- Table -->
-
-                    <table border="1" width="100%" cellspacing="0" cellpadding="5">
-
-                        <thead>
-                            <tr>
-                                <th>
-                                    Quantity
-                                </th>
-
-                                <th>
-                                    Instruments/Apparatus/Materials
-                                </th>
-
-                                <th>
-                                    Description
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <tr>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                            <tr>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                            <tr>
-                                <td><input type="number"></td>
-                                <td><input type="text"></td>
-                                <td><input type="text"></td>
-                            </tr>
-
-                        </tbody>
-
-                    </table>
-
-                    <!-- Bottom (Names only, no signatures) -->
-
-                    <div class="row">
-                        <label>
-                            Noted by:
-                        </label>
-
-                        <input type="text" placeholder="Instructor Name">
-                    </div>
-
-                    <div class="row">
-                        <label>
-                            Received by:
-                        </label>
-
-                        <input type="text" placeholder="Student Name">
-                    </div>
-
-                    <div class="row">
-                        <label>
-                            Issued by:
-                        </label>
-
-                        <input type="text" placeholder="Laboratory Assistant Name">
-                    </div>
-
-                    <button type="submit">
-                        Submit
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-        <!--Create account-->
-
-        <div id="createAccount" class="modal">
-
-            <div class="modal-content large-form">
-
-                <span class="close" onclick="closeForm('createAccount')">
-                    &times;
-                </span>
-
-                <div class="form-header">
-
-                    <h2>
-                        CITY COLLEGE OF ANGELES
-                    </h2>
-
-                    <h2>
-                        Angeles City
-                    </h2>
-
-                    <h3>
-                        SCIENCE LABORATORY
-                    </h3>
-
-                    <h4>
-                        BORROWER'S FORM
-                    </h4>
-
-                </div>
-
-                <div class="col">
-                    <label>
-                        Name:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="createName"
-                        name="createName">
-                </div>
-
-                <div class="col">
-                    <label>
-                        Password:
-                    </label>
-
-                    <input
-                        type="password"
-                        id="createPassword"
-                        name="createPassword">
-                </div>
-
-                    <button
-                        class="confirm-btn"
-                        onclick="confirmCreate()"
-                        id="confirmCreate"
-                        style="display:block;">
-                        Confirm Create
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!--Manage account-->
-
-         <div id="manageAccount" class="modal">
-    <div class="modal-content large-form">
-        <span class="close" onclick="closeForm('manageAccount')">&times;</span>
-
-        <div class="form-header">
-            <h2>CITY COLLEGE OF ANGELES</h2>
-            <h2>Angeles City</h2>
-            <h3>SCIENCE LABORATORY</h3>
-            <h4>BORROWER'S FORM</h4>
-        </div>
-
-        <table class="account-table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
                 </tr>
             </thead>
-            <tbody id="accountTableBody">
-                <!-- java skrep -->
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "lowhazard" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
             </tbody>
+
         </table>
+
     </div>
 </div>
 
-        <!-- User Details -->
-<div id="manageUserDetails" class="modal">
+
+<!-- ================= TOXIC CHEMICALS ================= -->
+
+<div class="inventory-category category-toxic">
+
+    <div class="category-header">
+        <h3>🟠 Toxic Chemicals</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">15</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "toxic" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= HAZARDOUS CHEMICALS ================= -->
+
+<div class="inventory-category category-hazardous">
+
+    <div class="category-header">
+        <h3>🔴 Hazardous Chemicals</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">25</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "hazardous" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= GLASSWARE ================= -->
+
+<div class="inventory-category category-equipment">
+
+    <div class="category-header">
+        <h3>🔵 Glassware</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">16</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "glassware" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= LABORATORY EQUIPMENT ================= -->
+
+<div class="inventory-category category-equipment">
+
+    <div class="category-header">
+        <h3>🔵 Laboratory Equipment</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">91</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "equipment" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= LABORATORY SUPPLIES ================= -->
+
+<div class="inventory-category category-supplies">
+
+    <div class="category-header">
+        <h3>🟣 Laboratory Supplies</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">5</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "supplies" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= PREPARED SLIDES ================= -->
+
+<div class="inventory-category category-slides">
+
+    <div class="category-header">
+        <h3>🟡 Prepared Slides</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">5</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "slides" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= LABORATORY MODELS ================= -->
+
+<div class="inventory-category category-models">
+
+    <div class="category-header">
+        <h3>🟤 Laboratory Models</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">4</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "models" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= FACILITY / FURNITURE ================= -->
+
+<div class="inventory-category category-facility">
+
+    <div class="category-header">
+        <h3>⚪ Facility / Furniture</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">7</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "facility" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= SAFETY EQUIPMENT ================= -->
+
+<div class="inventory-category category-safety">
+
+    <div class="category-header">
+        <h3>🔵 Safety Equipment</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">1</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] == "safety" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+
+
+<!-- ================= OTHERS ================= -->
+
+<div class="inventory-category category-safety">
+
+    <div class="category-header">
+        <h3>🔵 OTHERS</h3>
+
+        <span class="category-count">
+            <span class="category-visible-count">1</span> items
+        </span>
+    </div>
+
+    <div class="inventory-table-wrapper">
+
+        <table class="inventory-table">
+
+            <thead>
+                <tr>
+                    <th style="text-align:center;">Item</th>
+                    <th style="text-align:center;">Category</th>
+                    <th style="text-align:center;">Quantity</th>
+                    <th style="text-align:center;">Unit/Remarks</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in items %}
+                    {% if item["Class"] is none or item["Class"]|trim == "" or item["Class"] == "None" or item["Class"] == "NULL" %}
+
+                        <tr>
+                            <td>{{ item["Type"] }}</td>
+                            <td>{{ item["Category"] }}</td>
+                            <td>{{ item["Quantity"] }}</td>
+                            <td>{{ item["Remarks"] }}</td>
+                        </tr>
+
+                    {% endif %}
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
+    <!-- ================= NO RESULT ================= -->
+
+    <div id="noInventoryResult">
+
+        <i class="fas fa-search"></i>
+
+        <strong>No matching item found.</strong>
+
+        <p>
+            Try searching for another laboratory equipment,
+            chemical, supply, slide, or model.
+        </p>
+
+    </div>
+
+</div>
+
+<!-- ================= BORROW FORM MODAL ================= -->
+
+<div id="borrowForm" class="modal">
+
     <div class="modal-content large-form">
-        <span class="close" onclick="closeForm('manageUserDetails')">&times;</span>
 
-        <h2>ACCOUNT MANAGEMENT</h2>
+        <span class="close" onclick="closeForm('borrowForm')">&times;</span>
 
-        <div class="col">
-            <label>User ID:</label>
-            <input type="text" id="userID" readonly>
+        <div class="form-header">
+
+    <img src="{{ url_for('static', filename='images/logo(1).png') }}"
+         class="form-logo"
+         alt="City College of Angeles Logo">
+
+
+            <h2>CITY COLLEGE OF ANGELES</h2>
+
+            <h2>
+                Institute of Education, Arts and Sciences
+            </h2>
+
+            <h3>SCIENCE LABORATORY</h3>
+
+            <h4>BORROWER'S FORM</h4>
+
         </div>
 
+
         <div class="col">
+
             <label>Name:</label>
-            <input type="text" id="userName">
+
+            <input
+                type="text"
+                id="Name"
+                name="Name"
+                placeholder="Enter full name">
+
         </div>
+
 
         <div class="col">
-            <label>Password:</label>
-            <input type="password" id="userPassword">
+
+            <label>Email:</label>
+
+            <input
+                type="text"
+                id="Email"
+                name="Email"
+                placeholder="Enter email address">
+
         </div>
+
+
+        <div class="row">
+
+            <div class="col">
+
+                <label>Student ID:</label>
+
+                <input
+                    type="text"
+                    id="StudentID"
+                    name="StudentID"
+                    placeholder="Enter student ID">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Institute:</label>
+
+                <input
+                    type="text"
+                    id="Institute"
+                    name="Institute"
+                    placeholder="Enter institute">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Contact No.:</label>
+
+                <input
+                    type="text"
+                    id="Contact"
+                    name="Contact"
+                    placeholder="Enter contact number">
+
+            </div>
+
+        </div>
+
+
+        <div class="row">
+
+            <div class="col">
+
+                <label>Date Borrowed:</label>
+
+                <input
+                    type="date"
+                    id="dateBorrowed">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Date of Return:</label>
+
+                <input
+                    type="date"
+                    id="dateReturn">
+
+            </div>
+
+        </div>
+
 
         <div class="col">
-            <label>Status:</label>
-            <input type="text" id="userStatus">
+
+            <label>Approved by:</label>
+
+            <input
+                type="text"
+                id="approvedBy"
+                placeholder="Enter approving person">
+
         </div>
 
-        <button onclick="saveUserChanges()">Save Changes</button>
+
+        <div class="col">
+
+            <label>Item Borrowing:</label>
+
+            <div class="item-box" id="itemBox">
+                <!-- scanned items will appear here -->
+            </div>
+
+        </div>
+
+
+        <div class="button-group">
+
+            <button
+                class="scan-btn"
+                onclick="qrscanform()">
+                Scan Items
+            </button>
+
+
+            <button
+                class="confirm-btn"
+                onclick="confirmborrow(borrowData)"
+                id="confirmBtn"
+                style="display:none;">
+                Confirm Borrow
+            </button>
+
+        </div>
+
     </div>
+
+</div>
+
+
+<!-- ================= QR SCANNER MODAL ================= -->
+
+<div id="qrModal" class="qr-modal">
+
+    <div class="qr-content">
+
+        <span
+            class="close-btn"
+            onclick="closeScanner()">
+            &times;
+        </span>
+
+        <h3>Scan QR Code</h3>
+
+        <div id="reader"></div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= NOTICE POPUP ================= -->
+
+<div popover id="mydiv">
+
+    <h2>Notice!</h2>
+
+    <hr>
+
+    <p>
+        Please insert the required information first.
+    </p>
+
+    <button
+        popovertarget="mydiv"
+        popovertargetaction="hide">
+        Close
+    </button>
+
+</div>
+
+
+<!-- ================= RESERVATION FORM ================= -->
+
+
+
+<div id="reservationForm" class="modal">
+
+    <div class="modal-content form-container">
+
+        <span class="close" onclick="closeForm('reservationForm')">&times;</span>
+
+ <div class="form-header">
+
+    <img src="{{ url_for('static', filename='images/logo(1).png') }}"
+         class="form-logo"
+         alt="City College of Angeles Logo">
+
+            <h2>CITY COLLEGE OF ANGELES</h2>
+
+            <h2>
+                Institute of Education, Arts and Sciences
+            </h2>
+
+            <h3>SCIENCE LABORATORY</h3>
+
+            <h4>RESERVATION FORM</h4>
+
+        </div>
+
+
+        <form>
+
+            <div class="row">
+
+                <div class="col">
+
+                    <label>Nature of Activity:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter nature of activity">
+
+                </div>
+
+
+                <div class="col">
+
+                    <label>Date Filed:</label>
+
+                    <input type="date">
+
+                </div>
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Objective:</label>
+
+                <input
+                    type="text"
+                    placeholder="Enter objective">
+
+            </div>
+
+
+            <table border="1" width="100%" cellspacing="0" cellpadding="5">
+
+                <thead>
+
+                    <tr>
+                        <th>Date of Activity</th>
+                        <th>Time</th>
+                        <th>Yr. & Section</th>
+                        <th>Number of Students</th>
+                        <th>Materials/Equipment Needed</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                  
+                </tbody>
+
+            </table>
+
+
+            <div class="col">
+
+                <label>Teacher in Charge:</label>
+
+                <input
+                    type="text"
+                    placeholder="Enter teacher's name">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Approved by:</label>
+
+                <input
+                    type="text"
+                    placeholder="Enter approving person">
+
+            </div>
+
+
+            <button type="submit">
+                Submit Reservation
+            </button>
+
+        </form>
+
+    </div>
+
 </div>
 
 
 
+<!-- ================= BREAKAGE FORM ================= -->
+
+<div id="breakageForm" class="modal">
+
+    <div class="modal-content large-form">
+
+        <span class="close" onclick="closeForm('breakageForm')">&times;</span>
+
+
+  <div class="form-header">
+
+    <img src="{{ url_for('static', filename='images/logo(1).png') }}"
+         class="form-logo"
+         alt="City College of Angeles Logo">
+
+
+            <h2>CITY COLLEGE OF ANGELES</h2>
+
+            <h2>
+                Institute of Education, Arts and Sciences
+            </h2>
+
+            <h3>SCIENCE LABORATORY</h3>
+
+            <h4>BREAKAGE FORM</h4>
+
+        </div>
+
+
+        <form>
+
+            <div class="row">
+
+                <div class="col">
+
+                    <label>Subject:</label>
+                    <input type="text" placeholder="Enter subject">
+
+                    <label>Group No.:</label>
+                    <input type="text" placeholder="Enter group number">
+
+                    <label>Schedule:</label>
+                    <input type="text" placeholder="Enter schedule">
+
+                </div>
+
+
+                <div class="col">
+
+                    <label>Instructor's Name & Signature:</label>
+                    <input
+                        type="text"
+                        placeholder="Enter instructor's name">
+
+                    <label>Course & Section:</label>
+                    <input
+                        type="text"
+                        placeholder="Enter course and section">
+
+                    <label>Date:</label>
+                    <input type="date">
+
+                </div>
+
+            </div>
+
+
+            <h4>
+                Group Members and Student Numbers
+            </h4>
+
+
+            <div class="members">
+
+                <input type="text" placeholder="1. Name & Student No.">
+                <input type="text" placeholder="2. Name & Student No.">
+                <input type="text" placeholder="3. Name & Student No.">
+                <input type="text" placeholder="4. Name & Student No.">
+                <input type="text" placeholder="5. Name & Student No.">
+
+                <input type="text" placeholder="6. Name & Student No.">
+                <input type="text" placeholder="7. Name & Student No.">
+                <input type="text" placeholder="8. Name & Student No.">
+                <input type="text" placeholder="9. Name & Student No.">
+                <input type="text" placeholder="10. Name & Student No.">
+
+            </div>
+
+
+            <table class="breakage-table">
+
+                <tr>
+
+                    <th>Quantity</th>
+                    <th>Item Description</th>
+                    <th>Remarks</th>
+                    <th>Unit Cost</th>
+                    <th>Total Amount</th>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>
+                        <input type="number" min="1">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>
+                        <input type="number" min="1">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>
+                        <input type="number" min="1">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="text">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                    <td>
+                        <input type="number" min="0" step="0.01">
+                    </td>
+
+                </tr>
+
+            </table>
+
+
+            <div class="signatures">
+
+                <div>
+
+                    <p>Prepared by:</p>
+
+                    <input
+                        type="text"
+                        placeholder="Laboratory Custodian">
+
+                    <small>
+                        Laboratory Custodian
+                    </small>
+
+                </div>
+
+
+                <div>
+
+                    <p>Signature of Group Leader:</p>
+
+                    <input
+                        type="text"
+                        placeholder="Group Leader">
+
+                </div>
+
+            </div>
+
+
+            <button type="submit">
+                Submit Report
+            </button>
+
+        </form>
 
     </div>
 
 </div>
+
+
+<!-- ================= REQUISITION FORM ================= -->
+
+<div id="requisitionForm" class="modal">
+
+    <div class="modal-content form-container">
+
+        <span
+            class="close"
+            onclick="closeForm('requisitionForm')">
+            &times;
+        </span>
+
+
+<div class="form-header">
+
+    <img src="{{ url_for('static', filename='images/logo(1).png') }}"
+         class="form-logo"
+         alt="City College of Angeles Logo">
+
+
+            <h2>CITY COLLEGE OF ANGELES</h2>
+
+            <h2>
+                Institute of Education, Arts and Sciences
+            </h2>
+
+            <h3>SCIENCE LABORATORY</h3>
+
+            <h4>REQUISITION FORM</h4>
+
+        </div>
+
+
+        <form>
+
+            <!-- Top Information -->
+
+            <div class="row">
+
+                <div class="col">
+
+                    <label>Course/Section:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter course and section">
+
+                </div>
+
+
+                <div class="col">
+
+                    <label>Experiment No.:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter experiment number">
+
+                </div>
+
+            </div>
+
+
+            <div class="row">
+
+                <div class="col">
+
+                    <label>Group No.:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter group number">
+
+                </div>
+
+
+                <div class="col">
+
+                    <label>Title:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter experiment title">
+
+                </div>
+
+            </div>
+
+
+            <div class="row">
+
+                <div class="col">
+
+                    <label>Group Leader & Student No.:</label>
+
+                    <input
+                        type="text"
+                        placeholder="Enter group leader and student number">
+
+                </div>
+
+
+                <div class="col">
+
+                    <label>Date Borrowed:</label>
+
+                    <input type="date">
+
+                </div>
+
+            </div>
+
+
+            <!-- Members -->
+
+            <div class="col">
+
+                <label>
+                    Member Name & Student No.:
+                </label>
+
+            </div>
+
+
+            <div class="members">
+
+                <input type="text" placeholder="1. Name & Student No.">
+                <input type="text" placeholder="2. Name & Student No.">
+                <input type="text" placeholder="3. Name & Student No.">
+                <input type="text" placeholder="4. Name & Student No.">
+                <input type="text" placeholder="5. Name & Student No.">
+                <input type="text" placeholder="6. Name & Student No.">
+
+            </div>
+
+
+            <!-- Requisition Table -->
+
+            <table border="1" width="100%" cellspacing="0" cellpadding="5">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Quantity</th>
+
+                        <th>
+                            Instruments / Apparatus / Materials
+                        </th>
+
+                        <th>Description</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                   
+
+            </table>
+
+
+            <!-- Bottom Information -->
+
+            <div class="col">
+
+                <label>Noted by:</label>
+
+                <input
+                    type="text"
+                    placeholder="Instructor Name">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Received by:</label>
+
+                <input
+                    type="text"
+                    placeholder="Student Name">
+
+            </div>
+
+
+            <div class="col">
+
+                <label>Issued by:</label>
+
+                <input
+                    type="text"
+                    placeholder="Laboratory Assistant Name">
+
+            </div>
+
+
+            <button type="submit">
+                Submit
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
 
 </body>
 </html>
-

@@ -39,7 +39,7 @@
             <div class="summary-icon">👥</div>
             <div>
                 <h4>Total Borrowers</h4>
-                <h2>{{ total_borrowers|default(0) }}</h2>
+                <h2>{{ Borrower["Total"] }}</h2>
                 <p>Total registered borrowers</p>
             </div>
         </div>
@@ -47,7 +47,7 @@
             <div class="summary-icon">📥</div>
             <div>
                 <h4>Currently Borrowed</h4>
-                <h2>{{ total_borrowed|default(0) }}</h2>
+                <h2>{{ Borrowing["Borrowings"]|default(0) }}</h2>
                 <p>Items currently borrowed</p>
             </div>
         </div>
@@ -55,7 +55,7 @@
             <div class="summary-icon">🔄</div>
             <div>
                 <h4>Returned Items</h4>
-                <h2>{{ total_returned|default(0) }}</h2>
+                <h2>{{ Returned["Return"]|default(0) }}</h2>
                 <p>Successfully returned</p>
             </div>
         </div>
@@ -74,7 +74,7 @@
             <div class="summary-icon">🔬</div>
             <div>
                 <h4>Total Equipment</h4>
-                <h2>{{ total_equipment|default(0) }}</h2>
+                <h2>{{ Items["Item"]|default(0) }}</h2>
                 <p>Laboratory equipment</p>
             </div>
         </div>
