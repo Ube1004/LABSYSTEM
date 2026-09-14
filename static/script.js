@@ -622,4 +622,209 @@ function saveUserChanges() {
 }
 
 //analytics graph
+/* =========================================================
+   LABORATORY INVENTORY SEARCH
+   ========================================================= */
 
+function searchInventory() {
+
+    const searchInput = document
+        .getElementById("inventorySearch")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const categories = document.querySelectorAll(
+        ".inventory-category"
+    );
+
+    let totalMatches = 0;
+
+
+    /* =====================================================
+       CHECK EVERY CATEGORY
+       ===================================================== */
+
+    categories.forEach(function(category) {
+
+        const rows = category.querySelectorAll(
+            ".inventory-table tbody tr"
+        );
+
+        /*
+         * CHECK IF THE SEARCH TERM MATCHES
+         * THIS CATEGORY'S HEADER (e.g. "Toxic Chemicals").
+         * Emoji and other symbols are stripped out first
+         * so only the actual text is compared.
+         */
+
+        const headerElement = category.querySelector(
+            ".category-header h3"
+        );
+
+        const categoryName = headerElement
+            ? headerElement.textContent
+                .replace(/[^\p{L}\p{N}\s]/gu, "")
+                .toLowerCase()
+                .trim()
+            : "";
+
+        const categoryHeaderMatches =
+            searchInput !== "" &&
+            categoryName.includes(searchInput);
+
+        let categoryMatches = 0;
+
+
+        /* =================================================
+           CHECK EVERY ITEM
+           ================================================= */
+
+        rows.forEach(function(row) {
+
+            const itemName = row
+                .querySelector("td:first-child")
+                .textContent
+                .toLowerCase()
+                .trim();
+
+            /*
+             * SHOW THE ROW IF:
+             * - the item name matches, OR
+             * - the whole category header matches
+             *   (in which case every row in it counts).
+             */
+
+            if (
+                itemName.includes(searchInput) ||
+                categoryHeaderMatches
+            ) {
+
+                row.style.display = "";
+
+                categoryMatches++;
+
+                totalMatches++;
+
+            } else {
+
+                row.style.display = "none";
+
+            }
+
+        });
+
+
+        /* =================================================
+           HIDE CATEGORY IF NO ITEM MATCHES
+           ================================================= */
+
+        if (categoryMatches === 0) {
+
+            category.style.display = "none";
+
+        } else {
+
+            category.style.display = "";
+
+        }
+
+
+        /* =================================================
+           UPDATE CATEGORY COUNT
+           ================================================= */
+
+        const countElement = category.querySelector(
+            ".category-visible-count"
+        );
+
+        if (countElement) {
+
+            countElement.textContent = categoryMatches;
+
+        }
+
+    });
+
+
+    const noResult = document.getElementById(
+        "noInventoryResult"
+    );
+
+    const searchResult = document.getElementById(
+        "searchResult"
+    );
+
+
+    /* =====================================================
+       EMPTY SEARCH
+       ===================================================== */
+
+    if (searchInput === "") {
+
+        categories.forEach(function(category) {
+
+            category.style.display = "";
+
+
+            const rows = category.querySelectorAll(
+                ".inventory-table tbody tr"
+            );
+
+
+            rows.forEach(function(row) {
+
+                row.style.display = "";
+
+            });
+
+
+            const countElement = category.querySelector(
+                ".category-visible-count"
+            );
+
+            if (countElement) {
+
+                countElement.textContent = rows.length;
+
+            }
+
+        });
+
+
+        searchResult.innerHTML =
+            "Showing all laboratory inventory items.";
+
+        noResult.style.display = "none";
+
+        return;
+    }
+
+
+    /* =====================================================
+       DISPLAY SEARCH RESULTS
+       ===================================================== */
+
+    if (totalMatches > 0) {
+
+        searchResult.innerHTML =
+            "Found <strong>" +
+            totalMatches +
+            "</strong> matching item" +
+            (totalMatches !== 1 ? "s" : "") +
+            ".";
+
+        noResult.style.display = "none";
+
+    } else {
+
+        searchResult.innerHTML =
+            "No inventory items match <strong>\"" +
+            searchInput +
+            "\"</strong>.";
+
+        noResult.style.display = "block";
+
+    }
+
+}

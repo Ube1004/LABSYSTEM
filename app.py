@@ -766,7 +766,7 @@ def savephotos():
 
     return jsonify({
         "message": "Photos saved successfully!"
-    })
+    })  
 
 
 # ============================================================
