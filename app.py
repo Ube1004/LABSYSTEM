@@ -139,6 +139,7 @@ def dashboard():
     return render_template('dashboard.html',Items=Items , Returned=Returned, Borrower=Borrowers, ss=88, Borrowing = Borrowing)
 
 
+
 @app.route('/documentation')
 def documentation():
     return render_template('documentation.html')
@@ -765,7 +766,7 @@ def savephotos():
 
     return jsonify({
         "message": "Photos saved successfully!"
-    })
+    })  
 
 
 # ============================================================
@@ -921,6 +922,7 @@ def get_user(userID):
 @app.route("/update_user/<int:userID>", methods=["POST"])
 def update_user(userID):
     
+
     data = request.get_json()
 
     conn = sqlite3.connect(DB_PATH)
