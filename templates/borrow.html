@@ -930,19 +930,23 @@
             </div>
 
 
-            <div class="col">
 
-                <label>Contact No.:</label>
+<div class="col">
 
-                <input
-                    type="text"
-                    id="Contact"
-                    name="Contact"
-                    placeholder="Enter contact number">
+    <label>Contact No.:</label>
 
-            </div>
+    <input
+        type="tel"
+        id="Contact"
+        name="Contact"
+        placeholder="09XXXXXXXXX"
+        pattern="09[0-9]{9}"
+        maxlength="11"
+        required>
 
-        </div>
+</div>
+
+
 
 
         <div class="row">
@@ -979,9 +983,17 @@
                 type="text"
                 id="approvedBy"
                 placeholder="Enter approving person">
+            <label>Remarks:</label>
+            <input
+                type="text"
+                id="remarks"
+                placeholder="Enter Reasonings">
 
         </div>
+        
+        
 
+        </div>
 
         <div class="col">
 
@@ -1722,15 +1734,16 @@
                 title="Password must be at least 8 characters, contain one capital letter, and contain one special character."
             >
         </div>
-                </div>
-
-                    <button
+         <button
                         class="confirm-btn"
                         onclick="confirmCreate()"
                         id="confirmCreate"
                         style="display:block;">
                         Confirm Create
                     </button>
+                </div>
+
+                   
 
                 </div>
 
@@ -1792,13 +1805,17 @@
                 minlength="8"
                 pattern="(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}"
                 title="Password must be at least 8 characters, contain one capital letter, and contain one special character."
-            >
+                placeholder = "Leave empty to keep password unchanged"
+                >
         </div>
 
         <div class="col">
-            <label>Status:</label>
-            <input type="text" id="userStatus">
-        </div>
+    <label>Status:</label>
+    <select id="userStatus">
+        <option value="Admin">Admin</option>
+        <option value="superAdmin">superAdmin</option>
+    </select>
+</div>
 
         <button onclick="saveUserChanges()">Save Changes</button>
         <button onclick="deleteUser()">Delete User</button>
@@ -1852,17 +1869,18 @@
                         type="text"
                         id="studentID"
                         name="studentID">
-                </div>
-               
-                </div>
-
-                    <button
+                        <button
                         class="confirm-btn"
                         onclick="checkID()"
                         id="checkIDbtn"
                         style="display:block;">
                         Next
                     </button>
+                </div>
+               
+                </div>
+
+                    
 
                 </div>
 
