@@ -124,6 +124,13 @@ function startScanner() {
 }
 function stopScanner() {
 
+    if (codes.length === 0) {
+
+        alert("Please scan at least one item first.");
+        return;
+
+    }
+
     if (scanner) {
 
         scanner.stop()
@@ -148,6 +155,7 @@ function stopScanner() {
         qrscanform();
 
     }
+
 }
 
 function qrscanform(){
@@ -160,10 +168,11 @@ function qrscanform(){
     let dateB = document.getElementById("dateBorrowed").value;
     let dateR = document.getElementById("dateReturn").value;
     let approvedBy = document.getElementById("approvedBy").value;
+    let remarks = document.getElementById("remarks").value;
 
-    if (!studentid || !name || !email || !institute || !contact || !approvedBy) {
-        document.getElementById("mydiv").showPopover();
-        return;
+        if (!studentid || !name || !email || !institute || !contact || !approvedBy) {
+            document.getElementById("mydiv").showPopover();
+            return;
     }
 
     fetch('/qrscan', {
@@ -202,7 +211,8 @@ function qrscanform(){
             dateB: dateB,
             dateR: dateR,
             items: data.items,
-            approvedBy: approvedBy
+            approvedBy: approvedBy,
+            remarks: remarks
         };
 
         document.getElementById("confirmBtn").style.display = "block";
@@ -214,6 +224,14 @@ function qrscanform(){
     });
 }
 function confirmborrow(borrowData){
+
+    if (!borrowData){
+        alert("Must Insert Datas first")
+        
+
+
+    }
+    else {
     fetch('/confirmborrow' ,{ method: 'POST',headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(borrowData) })
         .then(res => res.json())
         .then(data => { console.log(data);
@@ -226,7 +244,7 @@ function confirmborrow(borrowData){
         
 
 
-}
+}}
 
 
 
@@ -472,6 +490,13 @@ function startReturnScanner() {
 
 
 function stopReturnScanner() {
+
+    if (returnCodes.length === 0) {
+
+        alert("Please scan at least one item first.");
+        return;
+
+    }
 
     if (returnScanner) {
 
@@ -836,6 +861,8 @@ function saveUserChanges() {
 
     let password = document.getElementById("userPassword").value;
 
+    if (password)
+    {
     if (password.length < 8) {
         alert("Password must be at least 8 characters.");
         return;
@@ -849,7 +876,7 @@ function saveUserChanges() {
     if (!/[^A-Za-z0-9]/.test(password)) {
         alert("Password must contain a special character.");
         return;
-    }
+    }}
     else{
     fetch(`/update_user/${payload.userID}`, {
         method: "POST",
@@ -870,19 +897,39 @@ function saveUserChanges() {
 }}
 
 
-function deleteUser(){
-    userID: document.getElementById("userID").value
 
-    fetch(`/deleteUser/${payload.userID}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+function deleteUser() {
+
+    let userID = document.getElementById("userID").value;
+
+    let confirmation = confirm("Are you sure you want to delete this user?");
+
+    if (!confirmation) {
+        return;
+    }
+
+    fetch(`/deleteUser/${userID}`, {
+        method: "POST"
     })
+    .then(res => res.json())
+    .then(data => {
 
+        alert(data.message);
 
+        if (data.success) {
+            location.reload();
+        }
 
+    })
+    .catch(error => {
+
+        console.log(error);
+
+    });
 
 }
+
+
 //analytics graph
 /* =========================================================
    LABORATORY INVENTORY SEARCH
@@ -1089,3 +1136,29 @@ function searchInventory() {
 
     }}
 
+
+    /*SEARCH FOR LOG*/
+
+    function searchLog() {
+
+    let search = document.getElementById("logSearch").value.toLowerCase();
+
+    let rows = document.querySelectorAll("#returnTable tr");
+
+    rows.forEach(row => {
+
+        let text = row.textContent.toLowerCase();
+
+        if (text.includes(search)) {
+
+            row.style.display = "";
+
+        } else {
+
+            row.style.display = "none";
+
+        }
+
+    });
+
+}

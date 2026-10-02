@@ -160,6 +160,40 @@ def dashboard():
     conn.row_factory = sqlite3.Row
 
     cursor = conn.cursor()
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            Borrower.BorrowerName,
+            Borrower.SchoolID,
+            COUNT(Log.LogID) AS TotalBorrowed
+        FROM Log
+        JOIN Borrower
+            ON Log.SchoolID = Borrower.SchoolID
+        GROUP BY Borrower.SchoolID
+        ORDER BY TotalBorrowed DESC
+        LIMIT 10
+    """)
+
+    top_borrowers = cur.fetchall()
+
+    cur.execute("""
+        SELECT
+            Items.Type,
+            COUNT(Log.ItemID) AS BorrowCount
+        FROM Log
+        JOIN Items
+            ON Log.ItemID = Items.ItemID
+        GROUP BY Items.Type
+        ORDER BY BorrowCount DESC
+        LIMIT 10
+    """)
+
+    top_items = cur.fetchall()
 
     cursor.execute("""
     SELECT COUNT(*) AS Total
@@ -187,11 +221,27 @@ def dashboard():
     """)
     Items = cursor.fetchone()
 
+    
+    
+    cursor.execute("""
+        SELECT COUNT(*) AS Available
+        FROM Items WHERE Status = 'AVAILABLE'
+    """)
+
+    Available = cursor.fetchone()
+
+    cursor.execute("""
+            SELECT COUNT(*) AS BROKEN
+            FROM Items WHERE Status = 'BROKEN'
+        """)
+    
+    Broken = cursor.fetchone()
+
 
     conn.close()
     
 
-    return render_template('dashboard.html',Items=Items , Returned=Returned, Borrower=Borrowers, ss=88, Borrowing = Borrowing)
+    return render_template('dashboard.html',Broken = Broken,Items=Items,Available = Available , Returned=Returned, Borrower=Borrowers, ss=88, Borrowing = Borrowing, top_borrowers=top_borrowers, top_items=top_items)
 
 
 @app.route('/documentation')
@@ -472,6 +522,7 @@ def confirm_borrow():
     dateR = data.get('dateR')
     items = data.get('items')
     approvedBy = data.get('approvedBy')
+    remarks = data.get('remarks')
 
     db_conn = sqlite3.connect(DB_PATH)
     cursor = db_conn.cursor()
@@ -503,14 +554,15 @@ def confirm_borrow():
         # INSERT LOG
         cursor.execute("""
             INSERT INTO Log
-            (SchoolID, ItemID, DateBorrowed, ExpectedReturnDate, ApprovedBy)
-            VALUES (?, ?, ?, ?, ?)
+            (SchoolID, ItemID, DateBorrowed, ExpectedReturnDate, ApprovedBy, Remarks)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             studentid,
             item['ItemID'],
             dateB,
             dateR,
-            approvedBy
+            approvedBy,
+            remarks
         ))
 
         # UPDATE ITEM STATUS
@@ -547,26 +599,27 @@ def returning():
     cur = conn.cursor()
 
     query = """
-        SELECT
-            Borrower.SchoolID,
-            Borrower.BorrowerName,
-            Borrower.Email,
-            Borrower.Contact,
-            Borrower.Department,
-            Log.DateBorrowed,
-            Log.ExpectedReturnDate,
-            Log.DateReturned,
-            Log.ApprovedBy,
-            Items.Code,
-            Items.Category,
-            Items.Type,
-            Items.Status
-        FROM Log
-        INNER JOIN Borrower
-            ON Log.SchoolID = Borrower.SchoolID
-        INNER JOIN Items
-            ON Log.ItemID = Items.ItemID
-    """
+    SELECT
+        Log.LogID,
+        Borrower.SchoolID,
+        Borrower.BorrowerName,
+        Borrower.Email,
+        Borrower.Contact,
+        Borrower.Department,
+        Log.DateBorrowed,
+        Log.ExpectedReturnDate,
+        Log.DateReturned,
+        Log.ApprovedBy,
+        Items.Code,
+        Items.Category,
+        Items.Type,
+        Items.Status
+    FROM Log
+    INNER JOIN Borrower
+        ON Log.SchoolID = Borrower.SchoolID
+    INNER JOIN Items
+        ON Log.ItemID = Items.ItemID
+"""
 
     cur.execute(query)
 
@@ -578,12 +631,13 @@ def returning():
 
     for row in rows:
 
-        sid = row["SchoolID"]
+        sid = row["LogID"]
 
         if sid not in grouped:
 
             grouped[sid] = {
-                "SchoolID": sid,
+                "LogID": sid,
+                "SchoolID": row["SchoolID"],
                 "BorrowerName": row["BorrowerName"],
                 "Email": row["Email"],
                 "Contact": row["Contact"],
@@ -863,6 +917,16 @@ def createUser():
 
         conn.commit()
 
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with open("AccountLog.txt", "a") as file:
+        
+                file.write(
+                    f"[{time}] user: {name} was created \n"
+                )
+        
+            
+
         return jsonify({
             "success": True,
             "message": "User created successfully."
@@ -1002,6 +1066,13 @@ def update_user(userID):
                 userID
             )
         )
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        with open("AccountLog.txt", "a") as file:
+        
+                file.write(
+                    f"[{time}] {data['name']} Account Details Updated\n"
+                )
 
     else:
 
@@ -1017,6 +1088,11 @@ def update_user(userID):
                 userID
             )
         )
+        time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        with open("AccountLog.txt", "a") as file:
+                           
+             file.write(f"[{time}] {data['name']} Account Details Updated\n")
 
     conn.commit()
     conn.close()
@@ -1030,18 +1106,52 @@ def update_user(userID):
 
 @app.route("/deleteUser/<int:userID>", methods=["POST"])
 def deleteUser(userID):
-    data = request.get_json()
-    
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    cur.execute("""DELETE FROM Users
-WHERE UserID = ?;""",(userID))
+    # Get the user's name before deleting
+    cur.execute("""
+        SELECT Name
+        FROM Users
+        WHERE UserID = ?
+    """, (userID,))
 
-    return jsonify({
-            "success": True
+    user = cur.fetchone()
+
+    if not user:
+
+        conn.close()
+
+        return jsonify({
+            "success": False,
+            "message": "User not found"
         })
 
+    username = user[0]
+
+    # Delete user
+    cur.execute("""
+        DELETE FROM Users
+        WHERE UserID = ?
+    """, (userID,))
+
+    conn.commit()
+    conn.close()
+
+    # Write deletion to log
+    time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    with open("AccountLog.txt", "a") as file:
+
+        file.write(
+            f"[{time}] UserID {userID} ({username}) was deleted\n"
+        )
+
+    return jsonify({
+        "success": True,
+        "message": "User successfully deleted"
+    })
 
 
 # ============================================================
