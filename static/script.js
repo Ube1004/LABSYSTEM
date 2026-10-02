@@ -1,8 +1,14 @@
 //global variable
 let borrowData = {};
 let returningItems = [];
-let user = "superadmin";
+let codes = [];
+let scanner;
 let scannedItems = [];
+let returnCodes = [];
+let returnScanner;
+let returnItems = [];
+
+
 const curruser = "{{ session['name'] }}";
 
 function login(){
@@ -45,6 +51,8 @@ function gotologin(){
     window.location.href = "/gotologin";
 }
 
+
+
 function qrscan(){
     fetch('/qrscan')
     
@@ -80,6 +88,68 @@ function qrscan(){
 }
 
 
+// QR SCAN
+function startScanner() {
+
+    scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        (decodedText) => {
+
+            console.log("QR CODE:", decodedText);
+
+            if (!codes.includes(decodedText)) {
+
+                codes.push(decodedText);
+
+                console.log("CODES:", codes);
+
+            }
+
+        },
+        (errorMessage) => {
+            // Ignore failed scans
+        }
+    )
+    .catch(error => {
+
+        console.log("Camera error:", error);
+
+    });
+}
+function stopScanner() {
+
+    if (scanner) {
+
+        scanner.stop()
+            .then(() => {
+
+                scanner.clear();
+                scanner = null;
+
+                console.log("Scanner stopped");
+
+                qrscanform();
+
+            })
+            .catch(error => {
+
+                console.log("Error stopping scanner:", error);
+
+            });
+
+    } else {
+
+        qrscanform();
+
+    }
+}
+
 function qrscanform(){
 
     let studentid = document.getElementById("StudentID").value;
@@ -90,45 +160,56 @@ function qrscanform(){
     let dateB = document.getElementById("dateBorrowed").value;
     let dateR = document.getElementById("dateReturn").value;
     let approvedBy = document.getElementById("approvedBy").value;
+
     if (!studentid || !name || !email || !institute || !contact || !approvedBy) {
         document.getElementById("mydiv").showPopover();
         return;
     }
 
-    fetch('/qrscan')
+    fetch('/qrscan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            codes: codes
+        })
+    })
     .then(res => res.json())
-    .then(data => {  let html = document.getElementById("itemBox").innerHTML;
+    .then(data => {
+
+        let html = document.getElementById("itemBox").innerHTML;
+
         data.items.forEach(item => {
+
             html += `
                 <div class="item">
-                   ${item.Type} with code ${item.Code}
+                    ${item.Type} with code ${item.Code}
                 </div>
             `;
+
         });
 
         document.getElementById("itemBox").innerHTML = html;
 
-        //show missing
-        if (data.missing && data.missing.length > 0){
+        // CREATE BORROW DATA
+        borrowData = {
+            name: name,
+            studentid: studentid,
+            email: email,
+            institute: institute,
+            contact: contact,
+            dateB: dateB,
+            dateR: dateR,
+            items: data.items,
+            approvedBy: approvedBy
+        };
+
+        document.getElementById("confirmBtn").style.display = "block";
+
+        if (data.missing && data.missing.length > 0) {
             alert("Missing/Not on Database: " + data.missing.join(", "));
         }
-
-        borrowData = {
-                    studentid,
-                    name,
-                    email,
-                    institute,
-                    contact,
-                    items: data.items,
-                    dateB,
-                    dateR,
-                    approvedBy
-                };
-
-
-        showCButton();
-        
-        
 
     });
 }
@@ -147,18 +228,7 @@ function confirmborrow(borrowData){
 
 }
 
-function returnscan(){
 
-    fetch('/confirmreturn')
-    .then(res => res.json())
-    .then(data => {
-      alert(JSON.stringify(data) + studentid + name + email + institute + contact + dateB + dateR);
-        showCButton();
-    });
-
-
-
-}
 
 
 
@@ -185,9 +255,51 @@ function test(){
 function closeForm(formId) {
     document.getElementById(formId).style.display = "none";
 }
-function openForm(formId) {
-    document.getElementById(formId).style.display = "flex";
+
+function openForm(formId, itemId) {
+    document.getElementById(formId).style.display = "block";
+
+    if (itemId){
+        fetch('/getItem' ,{method: 'POST', headers: {'Content-Type': 'application/json'},body: JSON.stringify({ itemId : itemId })})
+        .then(res => res.json())
+        .then(data => {
+
+        let Type = data.Type;
+                
+        document.getElementById("Type").textContent = data.item.Type;
+        document.getElementById("Category").textContent = data.item.Category;
+        document.getElementById("Class").textContent = data.item.Class;
+        let codes = "";
+        let Bcodes = "";
+
+        data.available.forEach(item => {
+            codes += item.Code + ", ";
+        });
+
+        document.getElementById("AvailableCodes").innerHTML = codes;
+
+        
+        
+
+        data.borrowed.forEach(item => {
+            Bcodes += item.Code + ", ";
+        });
+
+        document.getElementById("BorrowedCodes").innerHTML = Bcodes;
+
+
+
+
+        document.getElementById(formId).style.display = "block";
+        
+});
 }
+else{
+document.getElementById(formId).style.display = "block";
+}
+
+}
+
 
 document.addEventListener("DOMContentLoaded", function () {
     let today = new Date().toISOString().split('T')[0];
@@ -247,7 +359,7 @@ function borrowform(){
 }
 
 
-function confirmReturn(){
+/*function confirmReturn(){
 
     fetch('/updatereturn', {
 
@@ -271,7 +383,7 @@ function confirmReturn(){
 
     });
 
-}
+}*/
 
 function ItemReturning(items){
 
@@ -321,16 +433,114 @@ function manualReturn() {
 }
 
 
+//return scan
+function startReturnScanner() {
 
-function returns(){
+    returnScanner = new Html5Qrcode("returnReader");
 
-    fetch('/confirmreturn')
+    returnScanner.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        (decodedText) => {
 
+            console.log("RETURN QR:", decodedText);
+
+            if (!returnCodes.includes(decodedText)) {
+
+                returnCodes.push(decodedText);
+
+                console.log("RETURN CODES:", returnCodes);
+
+            }
+
+        },
+        (errorMessage) => {
+            // Ignore failed scans
+        }
+    )
+    .catch(error => {
+
+        console.log("Camera error:", error);
+
+    });
+}
+
+
+
+
+function stopReturnScanner() {
+
+    if (returnScanner) {
+
+        returnScanner.stop()
+            .then(() => {
+
+                returnScanner.clear();
+                returnScanner = null;
+
+                console.log("Return scanner stopped");
+
+                confirmreturn();
+
+            })
+            .catch(error => {
+
+                console.log("Error stopping scanner:", error);
+
+            });
+
+    } else {
+
+        confirmreturn();
+
+    }
+}
+function updateReturn() {
+
+    console.log("SENDING RETURN:", returnItems);
+
+    fetch('/updatereturn', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            items: returnItems
+        })
+    })
     .then(res => res.json())
-
     .then(data => {
 
-        returningItems = data.items;
+        console.log(data);
+
+        alert(data.message);
+        location.reload();
+
+    });
+
+}
+
+
+function confirmreturn() {
+
+    fetch('/confirmreturn', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            codes: returnCodes
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        console.log("RETURN ITEMS:", data.items);
+
+        returnItems = data.items;
 
         let html = "";
 
@@ -338,13 +548,15 @@ function returns(){
 
             html += `
                 <div class="item">
-                    ${item.Type} borrowed by ${item.BorrowerName}
+                    ${item.Type} with code ${item.Code}
+                    <br>
+                    Borrowed by: ${item.BorrowerName}
                 </div>
             `;
 
         });
 
-        document.getElementById("itemBox").innerHTML = html;
+        document.getElementById("returnItemBox").innerHTML = html;
 
     });
 
@@ -476,6 +688,21 @@ function confirmCreate(){
         return;
     }
 
+
+    if (password.length < 8) {
+        alert("Password must be at least 8 characters.");
+        return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        alert("Password must contain a capital letter.");
+        return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        alert("Password must contain a special character.");
+        return;
+    }
     fetch('/createUser', {
         method: 'POST',
         headers: {
@@ -588,7 +815,7 @@ function openUserDetails(userID) {
             if (data.success) {
                 document.getElementById("userID").value = data.userID;
                 document.getElementById("userName").value = data.name;
-                document.getElementById("userPassword").value = data.password;
+                
                 document.getElementById("userStatus").value = data.status;
 
                 openForm("manageUserDetails");
@@ -607,6 +834,23 @@ function saveUserChanges() {
         status: document.getElementById("userStatus").value
     };
 
+    let password = document.getElementById("userPassword").value;
+
+    if (password.length < 8) {
+        alert("Password must be at least 8 characters.");
+        return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        alert("Password must contain a capital letter.");
+        return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        alert("Password must contain a special character.");
+        return;
+    }
+    else{
     fetch(`/update_user/${payload.userID}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -623,8 +867,22 @@ function saveUserChanges() {
             }
         })
         .catch(error => console.error(error));
-}
+}}
 
+
+function deleteUser(){
+    userID: document.getElementById("userID").value
+
+    fetch(`/deleteUser/${payload.userID}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    })
+
+
+
+
+}
 //analytics graph
 /* =========================================================
    LABORATORY INVENTORY SEARCH
@@ -829,6 +1087,5 @@ function searchInventory() {
 
         noResult.style.display = "block";
 
-    }
+    }}
 
-}

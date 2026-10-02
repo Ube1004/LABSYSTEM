@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
 <body>
-
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 
 <div class="container">
@@ -239,10 +239,24 @@
 </div>
 
 <div class="button-group">
-    <button class="scan-btn" onclick="returns()">Scan Items</button>
-    <button class="confirm-btn" onclick="confirmReturn()" id="confirmBtn" style="display:block;">Confirm Return</button>
+    <button type="button" class="scan-btn" onclick="startReturnScanner()">
+        Scan Items
+    </button>
+
+    <button type="button" class="scan-btn" onclick="stopReturnScanner()">
+        Stop Scan Items
+    </button>
+
+   <button type="button" class="confirm-btn" onclick="updateReturn()" id="confirmBtn">
+    Confirm Return
+</button>
 </div>
-   
+
+<div id="returnReader"></div>
+
+<div class="item-box" id="returnItemBox">
+    <!-- returned items appear here -->
+</div>
 
     </form>
   </div>

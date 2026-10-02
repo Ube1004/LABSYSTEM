@@ -1,12 +1,11 @@
 from flask import Flask, jsonify, render_template, redirect, request, url_for
 import sqlite3
 import logging
-from qrscanner import qrscan
 from datetime import datetime
 from flask import session
 import base64
 import os
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from pathlib import Path
 
 
@@ -42,28 +41,31 @@ def login():
     cur.execute("""
         SELECT * FROM Users
         WHERE Name = ?
-        AND Password = ?
-    """, (username, password))
+    """, (username,))
 
     user = cur.fetchone()
 
     conn.close()
-    
 
-    if user:
+    if user and check_password_hash(user["Password"], password):
 
         session['username'] = user['Name']
         session['role'] = user['Status']
         session['userId'] = user['UserID']
 
-    print("LOGIN SESSION:", dict(session))
+        print("LOGIN SESSION:", dict(session))
+
+        return jsonify({
+            "success": True,
+            "username": user['Name'],
+            "role": user['Status'],
+            "userId": user['UserID']
+        })
 
     return jsonify({
-        "success": True,
-        "username": user['Name'],
-        "role": user['Status'],
-        "userId": user['UserID']
-    })
+        "success": False,
+        "message": "Invalid username or password."
+    }), 401
 
 @app.route('/logout')
 def logout():
@@ -76,6 +78,51 @@ def gotologin():
     return render_template('login.html')
 
 
+@app.route('/getItem', methods=['POST'])
+def getItem():
+
+    data = request.get_json()
+    ItemId = data.get('itemId')
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM Items WHERE ItemID = ?
+    """, (ItemId,))
+
+    item = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT * FROM Items WHERE Type = ? AND Status = ?
+    """, (item["Type"], "AVAILABLE",))
+
+    available = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT * FROM Items WHERE Type = ? AND Status = ?
+    """, (item["Type"], "BORROWED",))
+
+    borrowed = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT * FROM Items
+        WHERE Type = ? AND Status NOT IN ("AVAILABLE", "BORROWED")
+    """, (item["Type"], ))
+
+    other = cursor.fetchall()
+
+    conn.close()
+
+    return jsonify({
+        "item": dict(item),
+        "available": [dict(x) for x in available],
+        "borrowed": [dict(x) for x in borrowed],
+        "other": [dict(x) for x in other]
+    })
+
+
 @app.route('/borrow')
 def borrow():
 
@@ -84,10 +131,10 @@ def borrow():
 
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT Type, COUNT(*) AS Quantity
+    cursor.execute(""" 
+        SELECT ItemId, Category, TRIM(Class) AS Class, Type, COUNT(*) AS Quantity
         FROM Items
-        GROUP BY Type
+        GROUP BY Category, Class, Type
     """)
 
     items = cursor.fetchall()
@@ -356,13 +403,17 @@ def count():
 # QR SCAN
 # ============================================================
 
-@app.route('/qrscan')
+@app.route('/qrscan', methods=['POST'])
 def qr_scan():
 
-    codes = qrscan()
+    data = request.get_json()
+    codes = data.get("codes", [])
 
     if not codes:
-        return jsonify([])
+        return jsonify({
+            "items": [],
+            "missing": []
+        })
 
     placeholder = ','.join('?' * len(codes))
 
@@ -378,12 +429,12 @@ def qr_scan():
 
     db_conn.close()
 
-    data = []
+    items = []
     found_codes = []
 
     for row in rows:
 
-        data.append({
+        items.append({
             "ItemID": row[0],
             "Code": row[1],
             "Category": row[2],
@@ -399,10 +450,9 @@ def qr_scan():
     ]
 
     return jsonify({
-        "items": data,
+        "items": items,
         "missing": missing
     })
-
 
 # ============================================================
 # BORROWING
@@ -469,7 +519,7 @@ def confirm_borrow():
             SET Status = ?
             WHERE ItemID = ?
         """, (
-            "Borrowed",
+            "BORROWED",
             item['ItemID']
         ))
 
@@ -556,10 +606,11 @@ def returning():
     )
 
 
-@app.route('/confirmreturn')
+@app.route('/confirmreturn', methods=['POST'])
 def confirm_return():
 
-    qrcodes = qrscan()
+    data = request.get_json()
+    qrcodes = data.get('codes', [])
 
     if not qrcodes:
         return jsonify({
@@ -612,7 +663,6 @@ def confirm_return():
         "items": data
     })
 
-
 @app.route('/updatereturn', methods=['POST'])
 def update_return():
 
@@ -631,7 +681,7 @@ def update_return():
             SET Status = ?
             WHERE ItemID = ?
         """, (
-            "Available",
+            "AVAILABLE",
             item['ItemID']
         ))
 
@@ -721,7 +771,7 @@ def manualReturn():
     # UPDATE ITEM STATUS
     cur.execute("""
         UPDATE Items
-        SET Status = 'Available'
+        SET Status = 'AVAILABLE'
         WHERE ItemID = ?
     """, (item_id,))
 
@@ -795,6 +845,8 @@ def createUser():
             "message": "Please fill in all fields."
         })
 
+    hashed_password = generate_password_hash(password)
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
@@ -805,7 +857,7 @@ def createUser():
             VALUES (?, ?, ?)
         """, (
             name,
-            password,
+            hashed_password,
             "Admin"
         ))
 
@@ -827,7 +879,7 @@ def createUser():
 
         conn.close()
 
-
+##fast borrow
 @app.route("/get_student/<student_id>")
 def get_student(student_id):
 
@@ -925,16 +977,17 @@ def get_user(userID):
         "success": False
     })
 
-
 @app.route("/update_user/<int:userID>", methods=["POST"])
 def update_user(userID):
-    
+
     data = request.get_json()
 
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
     if data.get("password"):
+
+        hashed_password = generate_password_hash(data["password"])
 
         cur.execute(
             """
@@ -944,7 +997,7 @@ def update_user(userID):
             """,
             (
                 data["name"],
-                data["password"],
+                hashed_password,
                 data["status"],
                 userID
             )
@@ -973,6 +1026,24 @@ def update_user(userID):
     })
 
 
+# Delete User
+
+@app.route("/deleteUser/<int:userID>", methods=["POST"])
+def deleteUser(userID):
+    data = request.get_json()
+    
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+
+    cur.execute("""DELETE FROM Users
+WHERE UserID = ?;""",(userID))
+
+    return jsonify({
+            "success": True
+        })
+
+
+
 # ============================================================
 # RUN APP
 # ============================================================
@@ -982,3 +1053,4 @@ if __name__ == '__main__':
         debug=True,
         use_reloader=False
     )
+
