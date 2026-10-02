@@ -63,7 +63,7 @@
             <div class="summary-icon">⚠️</div>
             <div>
                 <h4>Broken Items</h4>
-                <h2>{{ total_broken|default(0) }}</h2>
+                <h2>{{ Broken["Broken"]|default(0) }}</h2>
                 <p>Items needing attention</p>
             </div>
         </div>
@@ -82,7 +82,7 @@
             <div class="summary-icon">✅</div>
             <div>
                 <h4>Available Equipment</h4>
-                <h2>{{ available_equipment|default(0) }}</h2>
+                <h2>{{ Available["Available"]|default(0) }}</h2>
                 <p>Ready for borrowing</p>
             </div>
         </div>
@@ -112,6 +112,24 @@
                     <p>Borrowers with the most borrowed items</p>
                 </div>
             </div>
+            {% for row in top_borrowers %}
+
+<li>
+
+{{ loop.index }}.
+{{ row["BorrowerName"] }}
+
+-
+
+{{ row["TotalBorrowed"] }}
+items
+
+
+</li>
+
+{% endfor %}
+
+</ul>
             <canvas id="borrowerChart"></canvas>
         </div>
 

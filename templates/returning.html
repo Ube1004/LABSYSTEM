@@ -70,6 +70,12 @@
     </div>
 
 </div>
+<input
+    type="text"
+    id="logSearch"
+    placeholder="Search ID, name, item..."
+    onkeyup="searchLog()"
+>
 
 {% if session['role'] == 'superAdmin' %}
     <!-- TABLE -->
