@@ -1,7 +1,0 @@
-Flask
-qrcode
-Pillow
-opencv-python
-pyzbar
-numpy
-Jinja2
